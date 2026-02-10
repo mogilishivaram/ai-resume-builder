@@ -1,0 +1,139 @@
+{
+  "identity": {
+    "name": "E1 Personal Finance",
+    "tone": "Warm, Professional, Trustworthy, Swiss-Organic",
+    "theme_strategy": "hybrid",
+    "description": "A minimalist, high-trust finance tracker that blends Swiss precision with organic warmth. Avoids the cold 'SaaS Blue' in favor of Stone, Emerald, and Clay tones."
+  },
+  "typography": {
+    "font_family": {
+      "headings": "Plus Jakarta Sans, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+      "h2": "text-3xl font-semibold tracking-tight",
+      "h3": "text-2xl font-semibold tracking-tight",
+      "body": "text-base leading-relaxed text-stone-600 dark:text-stone-400",
+      "small": "text-sm font-medium text-stone-500",
+      "amount_large": "text-4xl font-bold tracking-tighter tabular-nums",
+      "amount_medium": "text-xl font-semibold tracking-tight tabular-nums"
+    },
+    "instructions": "Import 'Plus Jakarta Sans' and 'Inter' via Google Fonts in index.css. Use Plus Jakarta for all headings and Inter for body text. Use JetBrains Mono or Inter with 'tabular-nums' for financial data."
+  },
+  "colors": {
+    "palette": {
+      "light": {
+        "background": "bg-stone-50",
+        "foreground": "text-stone-900",
+        "card": "bg-white",
+        "card_foreground": "text-stone-900",
+        "popover": "bg-white",
+        "primary": "bg-stone-900",
+        "primary_foreground": "text-stone-50",
+        "secondary": "bg-stone-100",
+        "secondary_foreground": "text-stone-900",
+        "muted": "bg-stone-100",
+        "muted_foreground": "text-stone-500",
+        "accent": "bg-stone-100",
+        "destructive": "bg-rose-500",
+        "border": "border-stone-200",
+        "input": "border-stone-200",
+        "ring": "ring-stone-900"
+      },
+      "dark": {
+        "background": "bg-stone-950",
+        "foreground": "text-stone-50",
+        "card": "bg-stone-900",
+        "card_foreground": "text-stone-50",
+        "popover": "bg-stone-900",
+        "primary": "bg-stone-50",
+        "primary_foreground": "text-stone-900",
+        "secondary": "bg-stone-800",
+        "secondary_foreground": "text-stone-50",
+        "muted": "bg-stone-800",
+        "muted_foreground": "text-stone-400",
+        "accent": "bg-stone-800",
+        "destructive": "bg-rose-900",
+        "border": "border-stone-800",
+        "input": "border-stone-800",
+        "ring": "ring-stone-300"
+      },
+      "semantic": {
+        "income": "text-emerald-700 dark:text-emerald-400",
+        "income_bg": "bg-emerald-50 dark:bg-emerald-900/20",
+        "expense": "text-rose-700 dark:text-rose-400",
+        "expense_bg": "bg-rose-50 dark:bg-rose-900/20",
+        "neutral_trend": "text-stone-500"
+      }
+    }
+  },
+  "layout": {
+    "spacing": {
+      "container_padding": "p-6 md:p-12 lg:p-16",
+      "card_padding": "p-6 md:p-8",
+      "section_gap": "gap-8"
+    },
+    "grid_strategy": {
+      "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6",
+      "bento_items": {
+        "balance_card": "col-span-12 md:col-span-6 lg:col-span-4",
+        "stats_card": "col-span-12 md:col-span-3 lg:col-span-4",
+        "chart_section": "col-span-12 md:col-span-8 lg:col-span-8",
+        "recent_txns": "col-span-12 md:col-span-4 lg:col-span-4 row-span-2"
+      }
+    },
+    "auth_layout": "Split screen: Left side aesthetic/branding (60%), Right side form (40%). On mobile: Stacked."
+  },
+  "components": {
+    "global_radius": "rounded-xl",
+    "buttons": {
+      "default": "h-11 px-8 rounded-full font-medium transition-transform active:scale-95",
+      "primary": "bg-stone-900 text-white hover:bg-stone-800 dark:bg-stone-50 dark:text-stone-900",
+      "ghost": "hover:bg-stone-100 text-stone-600 hover:text-stone-900"
+    },
+    "cards": {
+      "style": "bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 shadow-sm hover:shadow-md transition-shadow duration-300"
+    },
+    "inputs": {
+      "style": "h-11 rounded-lg border-stone-200 bg-transparent focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all"
+    },
+    "charts": {
+      "library": "recharts",
+      "style": "Minimalist. Hide grid lines if possible. Use custom tooltip with 'bg-stone-900 text-white rounded-lg p-3 text-sm'. Colors: Income=Emerald-500, Expense=Rose-500."
+    }
+  },
+  "visual_enhancers": {
+    "gradients": "No heavy gradients. Use subtle 'noise' texture overlays opacity-5 if available.",
+    "shadows": "Soft, diffuse shadows: shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
+    "glassmorphism": "Use sparingly. Header: bg-white/80 backdrop-blur-md border-b border-stone-100/50."
+  },
+  "motion": {
+    "guidelines": "Smooth, damped transitions. No bouncy springs for finance.",
+    "page_transition": "initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }}"
+  },
+  "accessibility": {
+    "rules": [
+      "Ensure text contrast ratio > 4.5:1",
+      "Focus rings must be visible",
+      "Use semantic HTML (main, section, h1-h6)",
+      "All interactive elements must have data-testid"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "1. Setup Shadcn UI with the 'Stone' or 'Slate' base color. Override radii to 0.75rem (12px).",
+    "2. Install 'Plus Jakarta Sans' font.",
+    "3. Implement the Dashboard using the Bento Grid layout defined above.",
+    "4. For the Auth Page, use a clean split layout. Left side: Abstract geometric pattern or solid warm stone color with a large quote/logo.",
+    "5. Use 'sonner' for all notifications.",
+    "6. Ensure specific data isolation in Supabase RLS policies.",
+    "7. Create a 'Layout' component that handles the sidebar/navigation and responsive wrapping."
+  ],
+  "UNIVERSAL_GUIDELINES": [
+    "Avoid generic 'SaaS Blue'. Use Stone/Greyscale + Emerald/Rose.",
+    "Don't center everything. Use asymmetry for interest.",
+    "Use 2-3x more padding than you think is necessary.",
+    "Interactive elements must have hover states."
+  ]
+}
