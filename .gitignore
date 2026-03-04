@@ -31,9 +31,15 @@ dist/
 dist
 
 # Environment files (comprehensive coverage)
-
+.env
+.env.*
+!.env.example
 *token.json*
 *credentials.json*
+
+# Databases
+*.db
+*.sqlite3
 
 # Logs and debug files
 npm-debug.log*
@@ -77,6 +83,10 @@ agenthub/agents/youtube/db
 .cache/
 
 # Mobile development
-android-sdk/ frontend/node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
-frontend/node_modules/@next/swc-linux-arm64-musl/next-swc.linux-arm64-musl.node
-frontend/node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
+android-sdk/
+
+# Next.js build output (all subdirectories)
+**/.next/
+
+# Pack files
+*.pack.gz
