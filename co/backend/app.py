@@ -1,5 +1,6 @@
 """AI Resume Builder – Flask Backend."""
 
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from config import Config
@@ -163,6 +164,7 @@ def ai_improve():
 
 if __name__ == "__main__":
     init_db()
+    port = int(os.environ.get("PORT", 5000))
     print("✅  Database initialised")
-    print("🚀  AI Resume Builder API running on http://localhost:5000")
-    app.run(debug=True, port=5000)
+    print(f"🚀  AI Resume Builder API running on http://0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
