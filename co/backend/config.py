@@ -14,4 +14,4 @@ class Config:
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
     DATABASE_PATH = os.path.join(os.path.dirname(__file__), "resume_builder.db")
     GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
-    REDIRECT_URI = "http://localhost:5000/auth/callback"
+    REDIRECT_URI = os.getenv("BACKEND_URL", "http://localhost:5000") + "/auth/callback"
