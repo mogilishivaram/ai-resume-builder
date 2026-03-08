@@ -11,7 +11,7 @@ class Config:
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    FRONTEND_URL = "https://ai-resume-builder-1r7ym.onrender.com"
     DATABASE_PATH = os.path.join(os.path.dirname(__file__), "resume_builder.db")
     GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
     REDIRECT_URI = "https://ai-resume-builder-r7ym.onrender.com/auth/callback"
