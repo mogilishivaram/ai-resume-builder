@@ -30,6 +30,9 @@ CORS(app, resources={r"/*": {"origins": Config.FRONTEND_URL}}, supports_credenti
 
 app.register_blueprint(auth_bp)
 
+# Initialise DB tables on startup (needed for gunicorn / Render)
+init_db()
+
 # -------------------------------------------------------- helper decorator
 
 
