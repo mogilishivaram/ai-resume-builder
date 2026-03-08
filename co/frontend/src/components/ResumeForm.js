@@ -93,7 +93,19 @@ export default function ResumeForm({ resume, onChange }) {
               <Input label="School" value={edu.school || ""} onChange={(v) => updateListItem("education", i, "school", v)} />
               <Input label="Location" value={edu.location || ""} onChange={(v) => updateListItem("education", i, "location", v)} />
               <Input label="Year" value={edu.year || ""} onChange={(v) => updateListItem("education", i, "year", v)} />
-              <Input label="GPA" value={edu.gpa || ""} onChange={(v) => updateListItem("education", i, "gpa", v)} />
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Grade Type</label>
+                <select
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                  value={edu.grade_type || "CGPA"}
+                  onChange={(e) => updateListItem("education", i, "grade_type", e.target.value)}
+                >
+                  <option value="CGPA">CGPA</option>
+                  <option value="GPA">GPA</option>
+                  <option value="Percentage">Percentage</option>
+                </select>
+              </div>
+              <Input label={`${edu.grade_type || "CGPA"} Value`} value={edu.gpa || ""} onChange={(v) => updateListItem("education", i, "gpa", v)} />
             </div>
           </div>
         ))}
@@ -102,11 +114,10 @@ export default function ResumeForm({ resume, onChange }) {
 
       {/* SKILLS */}
       <Accordion title="Skills" open={openSection === "skills"} onToggle={() => toggle("skills")}>
-        <textarea
-          className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary-400 resize-y min-h-[80px]"
-          placeholder="Enter skills separated by commas (e.g., JavaScript, React, Python)"
-          value={(resume.skills || []).join(", ")}
-          onChange={(e) => update("skills", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))}
+        <TagInput
+          tags={resume.skills || []}
+          onChange={(tags) => update("skills", tags)}
+          placeholder="Type a skill and press Enter or comma to add…"
         />
       </Accordion>
 
@@ -125,11 +136,14 @@ export default function ResumeForm({ resume, onChange }) {
                   onChange={(e) => updateListItem("projects", i, "description", e.target.value)}
                 />
               </div>
-              <Input
-                label="Technologies (comma separated)"
-                value={(proj.technologies || []).join(", ")}
-                onChange={(v) => updateListItem("projects", i, "technologies", v.split(",").map((s) => s.trim()).filter(Boolean))}
-              />
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Technologies</label>
+                <TagInput
+                  tags={proj.technologies || []}
+                  onChange={(tags) => updateListItem("projects", i, "technologies", tags)}
+                  placeholder="Type a technology and press Enter or comma…"
+                />
+              </div>
             </div>
           </div>
         ))}
@@ -186,6 +200,59 @@ function Input({ label, value, onChange, placeholder }) {
         value={value}
         placeholder={placeholder || ""}
         onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function TagInput({ tags, onChange, placeholder }) {
+  const [input, setInput] = React.useState("");
+
+  const addTag = (raw) => {
+    const tag = raw.trim();
+    if (tag && !tags.includes(tag)) onChange([...tags, tag]);
+    setInput("");
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(input);
+    } else if (e.key === "Backspace" && !input && tags.length) {
+      onChange(tags.slice(0, -1));
+    }
+  };
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    if (val.includes(",")) {
+      val.split(",").forEach((part) => {
+        const t = part.trim();
+        if (t && !tags.includes(t)) tags = [...tags, t];
+      });
+      onChange(tags);
+      setInput("");
+    } else {
+      setInput(val);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 border border-slate-200 rounded-lg p-2 focus-within:ring-2 focus-within:ring-primary-400 bg-white">
+      {tags.map((tag, i) => (
+        <span key={i} className="inline-flex items-center gap-1 bg-primary-50 text-primary-700 text-xs font-medium px-2.5 py-1 rounded-full">
+          {tag}
+          <button type="button" onClick={() => onChange(tags.filter((_, j) => j !== i))} className="hover:text-red-500 transition text-xs leading-none">&times;</button>
+        </span>
+      ))}
+      <input
+        type="text"
+        className="flex-1 min-w-[120px] border-none outline-none text-sm p-1"
+        placeholder={tags.length === 0 ? placeholder : ""}
+        value={input}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onBlur={() => { if (input.trim()) addTag(input); }}
       />
     </div>
   );

@@ -49,11 +49,12 @@ export default function ResumePreview({ resume, template = "professional" }) {
         <h1 className="text-2xl font-bold">{personal_info.name || "Your Name"}</h1>
         <p className="text-sm mt-1 opacity-90">{personal_info.title || "Professional Title"}</p>
         <div className="flex flex-wrap gap-4 mt-3 text-xs opacity-80">
-          {personal_info.email && <span>✉ {personal_info.email}</span>}
+          {personal_info.email && <span>✉ <a href={`mailto:${personal_info.email}`} style={{color: 'inherit', textDecoration: 'underline'}}>{personal_info.email}</a></span>}
           {personal_info.phone && <span>☎ {personal_info.phone}</span>}
           {personal_info.location && <span>📍 {personal_info.location}</span>}
-          {personal_info.linkedin && <span>🔗 {personal_info.linkedin}</span>}
-          {personal_info.website && <span>🌐 {personal_info.website}</span>}
+          {personal_info.linkedin && <span>🔗 <a href={personal_info.linkedin.startsWith('http') ? personal_info.linkedin : `https://${personal_info.linkedin}`} target="_blank" rel="noopener noreferrer" style={{color: 'inherit', textDecoration: 'underline'}}>{personal_info.linkedin}</a></span>}
+          {personal_info.website && <span>🌐 <a href={personal_info.website.startsWith('http') ? personal_info.website : `https://${personal_info.website}`} target="_blank" rel="noopener noreferrer" style={{color: 'inherit', textDecoration: 'underline'}}>{personal_info.website}</a></span>}
+          {personal_info.github && <span>💻 <a href={personal_info.github.startsWith('http') ? personal_info.github : `https://${personal_info.github}`} target="_blank" rel="noopener noreferrer" style={{color: 'inherit', textDecoration: 'underline'}}>{personal_info.github}</a></span>}
         </div>
       </div>
 
@@ -101,7 +102,7 @@ export default function ResumePreview({ resume, template = "professional" }) {
                   </div>
                   <span className="text-xs text-slate-400">{edu.year || edu.graduation_date}</span>
                 </div>
-                {edu.gpa && <p className="text-xs text-slate-400 mt-1">GPA: {edu.gpa}</p>}
+                {edu.gpa && <p className="text-xs text-slate-400 mt-1">{edu.grade_type || "CGPA"}: {edu.gpa}</p>}
               </div>
             ))}
           </Section>
