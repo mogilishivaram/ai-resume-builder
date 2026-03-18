@@ -3,6 +3,26 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getResumes, createResume, deleteResume } from "../services/resumeService";
 import { FiPlus, FiTrash2, FiEdit, FiFileText, FiClock } from "react-icons/fi";
+import { TEMPLATE_REGISTRY } from "../components/templates/templateRegistry";
+
+const LEGACY_TEMPLATE_LABELS = {
+  professional: "Professional",
+  modern: "Modern",
+  creative: "Creative",
+};
+
+function getTemplateLabel(templateId) {
+  if (!templateId) return "Classic Two-Column";
+  if (LEGACY_TEMPLATE_LABELS[templateId]) return LEGACY_TEMPLATE_LABELS[templateId];
+
+  const match = TEMPLATE_REGISTRY.find((template) => template.id === templateId);
+  if (match) return match.name;
+
+  return templateId
+    .split("-")
+    .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : ""))
+    .join(" ");
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -102,7 +122,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-800">{resume.title}</h3>
-                    <p className="text-xs text-slate-400 capitalize">{resume.template} template</p>
+                    <p className="text-xs text-slate-400">{getTemplateLabel(resume.template)} template</p>
                   </div>
                 </div>
               </div>

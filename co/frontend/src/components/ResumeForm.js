@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { FiPlus, FiTrash2, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiChevronDown, FiChevronUp, FiZap } from "react-icons/fi";
+import api from "../services/api";
 
 export default function ResumeForm({ resume, onChange }) {
   const [openSection, setOpenSection] = useState("personal");
@@ -50,6 +51,10 @@ export default function ResumeForm({ resume, onChange }) {
           placeholder="Write a compelling summary of your professional background..."
           value={resume.summary || ""}
           onChange={(e) => update("summary", e.target.value)}
+        />
+        <AiGrammarButton
+          text={resume.summary || ""}
+          onResult={(improved) => update("summary", improved)}
         />
       </Accordion>
 
@@ -103,13 +108,14 @@ export default function ResumeForm({ resume, onChange }) {
                   <option value="CGPA">CGPA</option>
                   <option value="GPA">GPA</option>
                   <option value="Percentage">Percentage</option>
+                  <option value="Marks">Marks</option>
                 </select>
               </div>
               <Input label={`${edu.grade_type || "CGPA"} Value`} value={edu.gpa || ""} onChange={(v) => updateListItem("education", i, "gpa", v)} />
             </div>
           </div>
         ))}
-        <AddButton label="Add Education" onClick={() => addListItem("education", { degree: "", school: "", location: "", year: "", gpa: "" })} />
+        <AddButton label="Add Education" onClick={() => addListItem("education", { degree: "", school: "", location: "", year: "", gpa: "", grade_type: "CGPA" })} />
       </Accordion>
 
       {/* SKILLS */}
@@ -201,6 +207,43 @@ function Input({ label, value, onChange, placeholder }) {
         placeholder={placeholder || ""}
         onChange={(e) => onChange(e.target.value)}
       />
+    </div>
+  );
+}
+
+function AiGrammarButton({ text, onResult }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleCheck = async () => {
+    if (!text || !text.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.post("/api/ai/improve-text", {
+        text,
+        instruction: "Fix all spelling mistakes, grammar errors, and improve clarity. Keep the same meaning and tone. Return only the corrected text.",
+      });
+      if (res.data?.text) onResult(res.data.text);
+    } catch (e) {
+      setError("AI check failed. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <button
+        type="button"
+        onClick={handleCheck}
+        disabled={loading || !text?.trim()}
+        className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <FiZap className={loading ? "animate-spin" : ""} />
+        {loading ? "Checking…" : "AI Spell & Grammar Check"}
+      </button>
+      {error && <span className="text-xs text-red-500">{error}</span>}
     </div>
   );
 }

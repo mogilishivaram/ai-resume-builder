@@ -3,8 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getResume, updateResume } from "../services/resumeService";
 import ResumeForm from "../components/ResumeForm";
 import ResumePreview from "../components/ResumePreview";
+import TemplatePicker from "../components/TemplatePicker";
 import AIPanel from "../components/AIPanel";
 import { FiSave, FiDownload, FiArrowLeft, FiEye, FiEdit, FiLoader } from "react-icons/fi";
+import { DEFAULT_TEMPLATE_ID, getDefaultAccentForTemplate } from "../components/templates/templateRegistry";
+
+const LEGACY_TEMPLATE_MAP = {
+  professional: "popular-classic-two-column",
+  modern: "modern-teal-header",
+  creative: "creative-sidebar-shapes",
+};
 
 export default function ResumeEditor() {
   const { id } = useParams();
@@ -14,13 +22,16 @@ export default function ResumeEditor() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [view, setView] = useState(window.innerWidth < 768 ? "form" : "split"); // form-only on mobile
-  const [template, setTemplate] = useState("professional");
+  const [template, setTemplate] = useState(DEFAULT_TEMPLATE_ID);
+  const [accentColor, setAccentColor] = useState(getDefaultAccentForTemplate(DEFAULT_TEMPLATE_ID));
 
   useEffect(() => {
     getResume(id)
       .then((data) => {
         setResume(data);
-        setTemplate(data.template || "professional");
+        const resolvedTemplate = LEGACY_TEMPLATE_MAP[data.template] || data.template || DEFAULT_TEMPLATE_ID;
+        setTemplate(resolvedTemplate);
+        setAccentColor(data.accent_color || getDefaultAccentForTemplate(resolvedTemplate));
       })
       .catch(() => navigate("/dashboard"))
       .finally(() => setLoading(false));
@@ -30,7 +41,7 @@ export default function ResumeEditor() {
     if (!resume) return;
     setSaving(true);
     try {
-      await updateResume(id, { ...resume, template });
+      await updateResume(id, { ...resume, template, accent_color: accentColor });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -38,7 +49,7 @@ export default function ResumeEditor() {
     } finally {
       setSaving(false);
     }
-  }, [id, resume, template]);
+  }, [id, resume, template, accentColor]);
 
   const handleDownloadPDF = async () => {
     const el = document.getElementById("resume-preview");
@@ -90,17 +101,6 @@ export default function ResumeEditor() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Template selector */}
-            <select
-              value={template}
-              onChange={(e) => setTemplate(e.target.value)}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 focus:ring-2 focus:ring-primary-400"
-            >
-              <option value="professional">Professional</option>
-              <option value="modern">Modern</option>
-              <option value="creative">Creative</option>
-            </select>
-
             {/* View toggles */}
             <div className="flex border border-slate-200 rounded-lg overflow-hidden">
               <ViewBtn active={view === "form"} onClick={() => setView("form")}><FiEdit /></ViewBtn>
@@ -133,6 +133,17 @@ export default function ResumeEditor() {
 
       {/* Editor content */}
       <div className="max-w-[1600px] mx-auto px-4 py-6">
+        <TemplatePicker
+          resume={resume}
+          selectedTemplate={template}
+          selectedAccent={accentColor}
+          onChooseTemplate={({ template: nextTemplate, accentColor: nextAccentColor }) => {
+            setTemplate(nextTemplate);
+            setAccentColor(nextAccentColor || getDefaultAccentForTemplate(nextTemplate));
+            setSaved(false);
+          }}
+        />
+
         <div className={`grid gap-6 ${view === "split" ? "lg:grid-cols-2" : "grid-cols-1"}`}>
           {/* Left – Form + AI */}
           {(view === "split" || view === "form") && (
@@ -145,7 +156,7 @@ export default function ResumeEditor() {
           {/* Right – Preview */}
           {(view === "split" || view === "preview") && (
             <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 180px)" }}>
-              <ResumePreview resume={resume} template={template} />
+              <ResumePreview resume={resume} template={template} accentColor={accentColor} />
             </div>
           )}
         </div>
