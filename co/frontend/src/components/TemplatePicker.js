@@ -17,7 +17,69 @@ function isLightColor(hex) {
   return luminance > 0.75;
 }
 
-export default function TemplatePicker({ resume, selectedTemplate, selectedAccent, onChooseTemplate }) {
+export default function TemplatePicker({ selectedTemplate, selectedAccent, onChooseTemplate }) {
+  const thumbnailResume = useMemo(
+    () => ({
+      personal_info: {
+        name: "Jordan Patel",
+        title: "Senior Product Designer",
+        email: "jordan.patel@email.com",
+        phone: "+1 (555) 201-4488",
+        location: "Austin, TX",
+        linkedin: "linkedin.com/in/jordanpatel",
+        website: "jordanpatel.design",
+        github: "github.com/jordanpatel",
+      },
+      summary:
+        "Design leader with 8+ years building accessible digital products. Strong collaborator with engineering and product teams, focused on measurable user outcomes.",
+      experience: [
+        {
+          title: "Senior Product Designer",
+          company: "Nimbus Labs",
+          location: "Austin, TX",
+          start_date: "2021",
+          end_date: "Present",
+          bullets: [
+            "Led redesign of onboarding journey, improving activation by 24%.",
+            "Built and documented component patterns used across 4 product teams.",
+          ],
+        },
+        {
+          title: "Product Designer",
+          company: "BrightCart",
+          location: "Remote",
+          start_date: "2018",
+          end_date: "2021",
+          bullets: [
+            "Delivered checkout UX improvements that reduced cart abandonment by 18%.",
+            "Partnered with engineers to ship high-fidelity UI with design QA checklists.",
+          ],
+        },
+      ],
+      education: [
+        {
+          degree: "B.S. in Human-Computer Interaction",
+          school: "University of Washington",
+          location: "Seattle, WA",
+          year: "2018",
+          grade_type: "GPA",
+          gpa: "3.8",
+        },
+      ],
+      skills: ["Product Design", "Design Systems", "User Research", "Figma"],
+      projects: [
+        {
+          name: "Design System Migration",
+          description: "Unified 60+ UI components and reduced design-dev handoff time by 30%.",
+          technologies: ["Figma", "Storybook", "React"],
+        },
+      ],
+      certifications: ["Google UX Design Certificate"],
+      languages: ["English (Fluent)", "Hindi (Professional)"],
+    }),
+    []
+  );
+
   const initialTemplate = selectedTemplate || TEMPLATE_REGISTRY[0].id;
   const initialAccent = selectedAccent || getDefaultAccentForTemplate(initialTemplate);
 
@@ -78,7 +140,7 @@ export default function TemplatePicker({ resume, selectedTemplate, selectedAccen
         })}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {filteredTemplates.map((template) => {
           const isActive = draftTemplate === template.id;
           const CardTemplate = template.Component;
@@ -98,16 +160,16 @@ export default function TemplatePicker({ resume, selectedTemplate, selectedAccen
                 {isActive && <span className="text-[11px] font-medium" style={{ color: draftAccent }}>Selected</span>}
               </div>
 
-              <div className="h-[190px] overflow-hidden p-2">
+              <div className="h-[190px] md:h-[250px] overflow-hidden p-2 bg-white">
                 <div
                   className="origin-top-left pointer-events-none"
                   style={{
-                    transform: "scale(0.25)",
-                    width: "400%",
-                    height: "400%",
+                    width: "820px",
+                    transform: "scale(0.18)",
+                    transformOrigin: "top left",
                   }}
                 >
-                  <CardTemplate resume={resume} accentColor={draftAccent} previewId={`preview-${template.id}`} />
+                  <CardTemplate resume={thumbnailResume} accentColor={draftAccent} previewId={`preview-${template.id}`} />
                 </div>
               </div>
             </button>

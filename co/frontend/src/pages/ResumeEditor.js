@@ -5,7 +5,7 @@ import ResumeForm from "../components/ResumeForm";
 import ResumePreview from "../components/ResumePreview";
 import TemplatePicker from "../components/TemplatePicker";
 import AIPanel from "../components/AIPanel";
-import { FiSave, FiDownload, FiArrowLeft, FiEye, FiEdit, FiLoader } from "react-icons/fi";
+import { FiSave, FiDownload, FiArrowLeft, FiEye, FiEdit, FiLoader, FiChevronDown, FiX } from "react-icons/fi";
 import { DEFAULT_TEMPLATE_ID, getDefaultAccentForTemplate } from "../components/templates/templateRegistry";
 
 const LEGACY_TEMPLATE_MAP = {
@@ -24,6 +24,7 @@ export default function ResumeEditor() {
   const [view, setView] = useState(window.innerWidth < 768 ? "form" : "split"); // form-only on mobile
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE_ID);
   const [accentColor, setAccentColor] = useState(getDefaultAccentForTemplate(DEFAULT_TEMPLATE_ID));
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
 
   useEffect(() => {
     getResume(id)
@@ -100,13 +101,22 @@ export default function ResumeEditor() {
             />
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap md:flex-nowrap justify-end">
             {/* View toggles */}
-            <div className="flex border border-slate-200 rounded-lg overflow-hidden">
+            <div className="flex border border-slate-200 rounded-lg overflow-hidden shrink-0">
               <ViewBtn active={view === "form"} onClick={() => setView("form")}><FiEdit /></ViewBtn>
               <ViewBtn active={view === "split"} onClick={() => setView("split")} className="hidden md:block">Split</ViewBtn>
               <ViewBtn active={view === "preview"} onClick={() => setView("preview")}><FiEye /></ViewBtn>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsTemplatePickerOpen(true)}
+              className="flex items-center gap-1 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-900 transition shrink-0 whitespace-nowrap"
+            >
+              Templates
+              <FiChevronDown />
+            </button>
 
             <button
               onClick={handleSave}
@@ -115,7 +125,7 @@ export default function ResumeEditor() {
                 saved
                   ? "bg-green-100 text-green-700"
                   : "bg-primary-600 text-white hover:bg-primary-700"
-              } disabled:opacity-50`}
+              } disabled:opacity-50 shrink-0 whitespace-nowrap`}
             >
               {saving ? <FiLoader className="animate-spin" /> : <FiSave />}
               {saved ? "Saved!" : "Save"}
@@ -123,7 +133,7 @@ export default function ResumeEditor() {
 
             <button
               onClick={handleDownloadPDF}
-              className="flex items-center gap-1 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-900 transition"
+              className="flex items-center gap-1 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-900 transition shrink-0 whitespace-nowrap"
             >
               <FiDownload /> PDF
             </button>
@@ -133,18 +143,7 @@ export default function ResumeEditor() {
 
       {/* Editor content */}
       <div className="max-w-[1600px] mx-auto px-4 py-6">
-        <TemplatePicker
-          resume={resume}
-          selectedTemplate={template}
-          selectedAccent={accentColor}
-          onChooseTemplate={({ template: nextTemplate, accentColor: nextAccentColor }) => {
-            setTemplate(nextTemplate);
-            setAccentColor(nextAccentColor || getDefaultAccentForTemplate(nextTemplate));
-            setSaved(false);
-          }}
-        />
-
-        <div className={`grid gap-6 ${view === "split" ? "lg:grid-cols-2" : "grid-cols-1"}`}>
+        <div className={`grid gap-6 grid-cols-1 ${view === "split" ? "md:[grid-template-columns:1fr_1fr]" : ""}`}>
           {/* Left – Form + AI */}
           {(view === "split" || view === "form") && (
             <div className="space-y-6 overflow-y-auto" style={{ maxHeight: "calc(100vh - 180px)" }}>
@@ -161,6 +160,44 @@ export default function ResumeEditor() {
           )}
         </div>
       </div>
+
+      {isTemplatePickerOpen && (
+        <div className="fixed inset-0 z-50 no-print">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-950/60"
+            aria-label="Close template gallery"
+            onClick={() => setIsTemplatePickerOpen(false)}
+          />
+          <div className="relative w-full h-full flex items-end md:items-center justify-center md:p-4">
+            <div className="bg-white w-full h-[88vh] rounded-t-2xl overflow-hidden flex flex-col animate-drawer-up md:animate-none md:h-auto md:w-full md:max-w-[900px] md:max-h-[85vh] md:rounded-xl md:shadow-2xl">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200">
+                <h2 className="text-base sm:text-lg font-semibold text-slate-800">Template Gallery</h2>
+                <button
+                  type="button"
+                  onClick={() => setIsTemplatePickerOpen(false)}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  aria-label="Close template gallery"
+                >
+                  <FiX className="text-lg" />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1">
+                <TemplatePicker
+                  selectedTemplate={template}
+                  selectedAccent={accentColor}
+                  onChooseTemplate={({ template: nextTemplate, accentColor: nextAccentColor }) => {
+                    setTemplate(nextTemplate);
+                    setAccentColor(nextAccentColor || getDefaultAccentForTemplate(nextTemplate));
+                    setSaved(false);
+                    setIsTemplatePickerOpen(false);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
