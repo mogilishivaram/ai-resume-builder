@@ -9,7 +9,7 @@ from config import Config
 def _get_model():
     """Configure and return Gemini model."""
     genai.configure(api_key=Config.GEMINI_API_KEY)
-    return genai.GenerativeModel("gemini-1.5-flash")
+    return genai.GenerativeModel("gemini-2.0-flash")
 
 
 def _generate_with_retry(model, prompt, max_retries=3):

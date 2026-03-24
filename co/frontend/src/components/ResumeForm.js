@@ -1,5 +1,7 @@
 import React, { useRef, useState } from "react";
 import { FiPlus, FiTrash2, FiChevronDown, FiChevronUp, FiZap, FiX } from "react-icons/fi";
+import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 import api from "../services/api";
 
 function getInitials(name = "") {
@@ -8,6 +10,52 @@ function getInitials(name = "") {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0] || ""}${parts[parts.length - 1][0] || ""}`.toUpperCase();
 }
+
+function centerAspectCrop(mediaWidth, mediaHeight, aspect) {
+  return centerCrop(
+    makeAspectCrop(
+      {
+        unit: "%",
+        width: 90,
+      },
+      aspect,
+      mediaWidth,
+      mediaHeight
+    ),
+    mediaWidth,
+    mediaHeight
+  );
+}
+
+const getCroppedImage = (image, crop) => {
+  const canvas = document.createElement("canvas");
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
+  canvas.width = 400;
+  canvas.height = 400;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Unable to process selected image.");
+  }
+
+  const cropX = crop.unit === "%" ? (crop.x / 100) * image.width : crop.x;
+  const cropY = crop.unit === "%" ? (crop.y / 100) * image.height : crop.y;
+  const cropWidth = crop.unit === "%" ? (crop.width / 100) * image.width : crop.width;
+  const cropHeight = crop.unit === "%" ? (crop.height / 100) * image.height : crop.height;
+
+  ctx.drawImage(
+    image,
+    cropX * scaleX,
+    cropY * scaleY,
+    cropWidth * scaleX,
+    cropHeight * scaleY,
+    0,
+    0,
+    400,
+    400
+  );
+  return canvas.toDataURL("image/jpeg", 0.85);
+};
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -18,43 +66,18 @@ function fileToDataUrl(file) {
   });
 }
 
-function loadImage(src) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Unable to load selected image."));
-    img.src = src;
-  });
-}
-
-async function compressImageToBase64(file, maxWidth = 400, maxHeight = 400) {
-  const sourceDataUrl = await fileToDataUrl(file);
-  const image = await loadImage(sourceDataUrl);
-
-  const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
-  const targetWidth = Math.max(1, Math.round(image.width * scale));
-  const targetHeight = Math.max(1, Math.round(image.height * scale));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new Error("Unable to process selected image.");
-  }
-
-  ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-  const mimeType = file.type === "image/png" ? "image/png" : "image/jpeg";
-  const quality = mimeType === "image/jpeg" ? 0.85 : undefined;
-  return canvas.toDataURL(mimeType, quality);
-}
-
 export default function ResumeForm({ resume, onChange }) {
   const [openSection, setOpenSection] = useState("personal");
   const [photoError, setPhotoError] = useState("");
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState("");
+  const [crop, setCrop] = useState();
+  const [completedCrop, setCompletedCrop] = useState(null);
+  const [zoom, setZoom] = useState(1);
+  const [applyingCrop, setApplyingCrop] = useState(false);
   const fileInputRef = useRef(null);
+  const cropImageRef = useRef(null);
+  const pinchDistanceRef = useRef(null);
 
   const toggle = (key) => setOpenSection(openSection === key ? null : key);
 
@@ -89,12 +112,89 @@ export default function ResumeForm({ resume, onChange }) {
 
     setPhotoError("");
     try {
-      const compressedPhoto = await compressImageToBase64(file, 400, 400);
-      updatePersonal("profilePhoto", compressedPhoto);
+      const imageDataUrl = await fileToDataUrl(file);
+      setSelectedImageSrc(imageDataUrl);
+      setCropModalOpen(true);
+      setCrop(undefined);
+      setCompletedCrop(null);
+      setZoom(1);
     } catch (error) {
       setPhotoError(error.message || "Unable to process image.");
     } finally {
       event.target.value = "";
+    }
+  };
+
+  const handleCancelCrop = () => {
+    setCropModalOpen(false);
+    setSelectedImageSrc("");
+    setCrop(undefined);
+    setCompletedCrop(null);
+    setZoom(1);
+    pinchDistanceRef.current = null;
+  };
+
+  const handleApplyCrop = async () => {
+    if (!cropImageRef.current || !completedCrop) {
+      setPhotoError("Please select a crop area first.");
+      return;
+    }
+
+    setApplyingCrop(true);
+    setPhotoError("");
+    try {
+      const croppedPhoto = getCroppedImage(cropImageRef.current, completedCrop);
+      updatePersonal("profilePhoto", croppedPhoto);
+      handleCancelCrop();
+    } catch (error) {
+      setPhotoError(error.message || "Unable to process image.");
+    } finally {
+      setApplyingCrop(false);
+    }
+  };
+
+  const handleCropImageLoad = (event) => {
+    const { width, height } = event.currentTarget;
+    setCrop(centerAspectCrop(width, height, 1));
+  };
+
+  const handleZoomChange = (nextZoom) => {
+    const clamped = Math.min(3, Math.max(1, nextZoom));
+    setZoom(clamped);
+  };
+
+  const handleCropWheel = (event) => {
+    event.preventDefault();
+    const delta = event.deltaY < 0 ? 0.08 : -0.08;
+    handleZoomChange(zoom + delta);
+  };
+
+  const distanceBetweenTouches = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (event) => {
+    if (event.touches.length === 2) {
+      pinchDistanceRef.current = distanceBetweenTouches(event.touches);
+    }
+  };
+
+  const handleTouchMove = (event) => {
+    if (event.touches.length !== 2 || !pinchDistanceRef.current) return;
+    event.preventDefault();
+    const currentDistance = distanceBetweenTouches(event.touches);
+    const delta = currentDistance - pinchDistanceRef.current;
+    if (Math.abs(delta) > 2) {
+      handleZoomChange(zoom + (delta > 0 ? 0.03 : -0.03));
+      pinchDistanceRef.current = currentDistance;
+    }
+  };
+
+  const handleTouchEnd = (event) => {
+    if (event.touches.length < 2) {
+      pinchDistanceRef.current = null;
     }
   };
 
@@ -305,6 +405,90 @@ export default function ResumeForm({ resume, onChange }) {
           onChange={(e) => update("languages", e.target.value.split("\n").filter(Boolean))}
         />
       </Accordion>
+
+      {cropModalOpen && (
+        <div className="fixed inset-0 z-[70] bg-slate-950/80 flex items-center justify-center p-0 sm:p-4">
+          <div className="w-full h-full bg-slate-900 text-white flex flex-col sm:h-auto sm:max-w-[500px] sm:rounded-2xl sm:border sm:border-white/10 sm:shadow-2xl">
+            <style>{`.profile-photo-crop .ReactCrop__crop-selection{border:2px solid #fff;}`}</style>
+
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <h3 className="text-base font-semibold">Crop Profile Photo</h3>
+              <button
+                type="button"
+                onClick={handleCancelCrop}
+                className="w-8 h-8 rounded-md hover:bg-white/10 transition"
+                aria-label="Close crop modal"
+              >
+                <FiX className="mx-auto" />
+              </button>
+            </div>
+
+            <div className="flex-1 p-4 overflow-hidden">
+              <div
+                className="profile-photo-crop h-full min-h-[320px] rounded-xl bg-black/40 border border-white/10 flex items-center justify-center overflow-auto touch-none"
+                onWheel={handleCropWheel}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                {selectedImageSrc && (
+                  <ReactCrop
+                    crop={crop}
+                    onChange={(_, percentCrop) => setCrop(percentCrop)}
+                    onComplete={(pixelCrop) => setCompletedCrop(pixelCrop)}
+                    aspect={1}
+                    circularCrop
+                    keepSelection
+                  >
+                    <img
+                      ref={cropImageRef}
+                      src={selectedImageSrc}
+                      alt="Crop source"
+                      onLoad={handleCropImageLoad}
+                      style={{
+                        width: `${Math.round(zoom * 100)}%`,
+                        maxWidth: "none",
+                        display: "block",
+                      }}
+                    />
+                  </ReactCrop>
+                )}
+              </div>
+
+              <div className="mt-3">
+                <label className="block text-xs text-white/80 mb-1">Zoom</label>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.01}
+                  value={zoom}
+                  onChange={(e) => handleZoomChange(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="px-4 py-3 border-t border-white/10 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleCancelCrop}
+                className="px-4 py-2 rounded-lg border border-white/20 text-white/90 hover:bg-white/10 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyCrop}
+                disabled={applyingCrop}
+                className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition disabled:opacity-50"
+              >
+                {applyingCrop ? "Applying..." : "Apply Crop"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

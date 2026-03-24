@@ -190,7 +190,7 @@ def extract_resume():
         if media_type not in supported_media_types:
             return jsonify({"success": False, "error": "Only PDF, JPG, PNG and WEBP files are supported"}), 400
 
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
 
         prompt = """You are a resume parser. Extract ALL information from this resume document/image and return ONLY a valid JSON object with exactly this structure. Do not include any explanation, markdown, or extra text - ONLY the raw JSON:
         {
