@@ -4,6 +4,7 @@ import { normalizeResumeData, getInitials, formatSkill, ensureUrl } from "./temp
 export default function DarkSidebarInitialsTemplate({ resume, accentColor, previewId = "resume-preview" }) {
   const { personalInfo, summary, experience, education, skills } = normalizeResumeData(resume);
   const initials = getInitials(personalInfo.name);
+  const profilePhoto = personalInfo.profilePhoto;
   const dark = "#2d2d2d";
   const color = accentColor || "#e2e8f0";
 
@@ -11,9 +12,17 @@ export default function DarkSidebarInitialsTemplate({ resume, accentColor, previ
     <div id={previewId} className="bg-white rounded-lg shadow-lg overflow-hidden text-slate-800" style={{ fontFamily: "'Inter', sans-serif" }}>
       <div className="grid grid-cols-[32%_68%] min-h-[900px]">
         <aside className="p-6 text-white" style={{ backgroundColor: dark }}>
-          <div className="w-20 h-20 rounded-full border-2 border-white/70 flex items-center justify-center text-2xl font-bold">
-            {initials}
-          </div>
+          {profilePhoto ? (
+            <img
+              src={profilePhoto}
+              alt={personalInfo.name || "Profile photo"}
+              className="w-20 h-20 rounded-full border-2 border-white/70 object-cover"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full border-2 border-white/70 flex items-center justify-center text-2xl font-bold">
+              {initials}
+            </div>
+          )}
           <h1 className="text-xl font-semibold mt-3">{personalInfo.name || "Your Name"}</h1>
           <p className="text-xs text-white/80">{personalInfo.title || "Professional Title"}</p>
 

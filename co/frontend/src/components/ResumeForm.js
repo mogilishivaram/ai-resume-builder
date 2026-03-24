@@ -1,9 +1,60 @@
-import React, { useState } from "react";
-import { FiPlus, FiTrash2, FiChevronDown, FiChevronUp, FiZap } from "react-icons/fi";
+import React, { useRef, useState } from "react";
+import { FiPlus, FiTrash2, FiChevronDown, FiChevronUp, FiZap, FiX } from "react-icons/fi";
 import api from "../services/api";
+
+function getInitials(name = "") {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "YN";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] || ""}${parts[parts.length - 1][0] || ""}`.toUpperCase();
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Unable to read selected file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Unable to load selected image."));
+    img.src = src;
+  });
+}
+
+async function compressImageToBase64(file, maxWidth = 400, maxHeight = 400) {
+  const sourceDataUrl = await fileToDataUrl(file);
+  const image = await loadImage(sourceDataUrl);
+
+  const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+  const targetWidth = Math.max(1, Math.round(image.width * scale));
+  const targetHeight = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Unable to process selected image.");
+  }
+
+  ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+  const mimeType = file.type === "image/png" ? "image/png" : "image/jpeg";
+  const quality = mimeType === "image/jpeg" ? 0.85 : undefined;
+  return canvas.toDataURL(mimeType, quality);
+}
 
 export default function ResumeForm({ resume, onChange }) {
   const [openSection, setOpenSection] = useState("personal");
+  const [photoError, setPhotoError] = useState("");
+  const fileInputRef = useRef(null);
 
   const toggle = (key) => setOpenSection(openSection === key ? null : key);
 
@@ -28,10 +79,89 @@ export default function ResumeForm({ resume, onChange }) {
     update(field, list);
   };
 
+  const handlePickPhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setPhotoError("");
+    try {
+      const compressedPhoto = await compressImageToBase64(file, 400, 400);
+      updatePersonal("profilePhoto", compressedPhoto);
+    } catch (error) {
+      setPhotoError(error.message || "Unable to process image.");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    updatePersonal("profilePhoto", "");
+    setPhotoError("");
+  };
+
+  const profilePhoto = resume.personal_info?.profilePhoto || "";
+  const profileInitials = getInitials(resume.personal_info?.name || "");
+
   return (
     <div className="space-y-3">
       {/* PERSONAL INFO */}
       <Accordion title="Personal Information" open={openSection === "personal"} onToggle={() => toggle("personal")}>
+        <div className="mb-4 flex items-center gap-4">
+          <div className="relative w-24 h-24">
+            {profilePhoto ? (
+              <img
+                src={profilePhoto}
+                alt="Profile"
+                className="w-24 h-24 rounded-full object-cover border border-slate-200"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xl">
+                {profileInitials}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handlePickPhoto}
+              className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center border-2 border-white shadow-sm hover:bg-primary-700 transition"
+              aria-label="Add profile photo"
+              title="Add profile photo"
+            >
+              <FiPlus />
+            </button>
+
+            {profilePhoto && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white text-slate-600 border border-slate-200 flex items-center justify-center shadow-sm hover:text-red-500 transition"
+                aria-label="Remove profile photo"
+                title="Remove profile photo"
+              >
+                <FiX />
+              </button>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-slate-700">Profile Photo</p>
+            <p className="text-xs text-slate-500">Tap/click + to upload. Images are resized to max 400 x 400 px.</p>
+            {photoError && <p className="text-xs text-red-500 mt-1">{photoError}</p>}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Input label="Full Name" value={resume.personal_info?.name || ""} onChange={(v) => updatePersonal("name", v)} />
           <Input label="Professional Title" value={resume.personal_info?.title || ""} onChange={(v) => updatePersonal("title", v)} />

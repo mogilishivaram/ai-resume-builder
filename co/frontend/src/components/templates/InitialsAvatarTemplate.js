@@ -5,13 +5,22 @@ export default function InitialsAvatarTemplate({ resume, accentColor, previewId 
   const { personalInfo, summary, experience, education, projects, skills } = normalizeResumeData(resume);
   const color = accentColor || "#2563eb";
   const initials = getInitials(personalInfo.name);
+  const profilePhoto = personalInfo.profilePhoto;
 
   return (
     <div id={previewId} className="bg-white rounded-lg shadow-lg p-7 text-slate-800" style={{ fontFamily: "'Inter', sans-serif" }}>
       <header className="text-center border-b border-slate-200 pb-5 mb-5">
-        <div className="w-24 h-24 rounded-full mx-auto flex items-center justify-center text-3xl font-bold" style={{ backgroundColor: `${color}1e`, color }}>
-          {initials}
-        </div>
+        {profilePhoto ? (
+          <img
+            src={profilePhoto}
+            alt={personalInfo.name || "Profile photo"}
+            className="w-24 h-24 rounded-full mx-auto object-cover border border-slate-200"
+          />
+        ) : (
+          <div className="w-24 h-24 rounded-full mx-auto flex items-center justify-center text-3xl font-bold" style={{ backgroundColor: `${color}1e`, color }}>
+            {initials}
+          </div>
+        )}
         <h1 className="text-2xl font-semibold mt-3">{personalInfo.name || "Your Name"}</h1>
         <p className="text-sm mt-1" style={{ color }}>{personalInfo.title || "Professional Title"}</p>
       </header>

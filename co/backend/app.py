@@ -1,8 +1,11 @@
 """AI Resume Builder – Flask Backend."""
 
 import os
+import json
+import re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import google.generativeai as genai
 from config import Config
 from models import (
     init_db,
@@ -29,6 +32,7 @@ app.secret_key = Config.SECRET_KEY
 CORS(app, resources={r"/*": {"origins": Config.FRONTEND_URL}}, supports_credentials=True)
 
 app.register_blueprint(auth_bp)
+genai.configure(api_key=Config.GEMINI_API_KEY)
 
 # Initialise DB tables on startup (needed for gunicorn / Render)
 init_db()
@@ -49,6 +53,9 @@ def login_required(fn):
         return fn(*args, **kwargs)
 
     return wrapper
+
+
+jwt_required = login_required
 
 
 # ------------------------------------------------------------------ routes
@@ -161,6 +168,108 @@ def ai_improve():
         return jsonify({"text": improved})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/resume/extract", methods=["POST"])
+@jwt_required
+def extract_resume():
+    try:
+        data = request.get_json() or {}
+        file_data = data.get("fileData")
+        media_type = data.get("mediaType")
+
+        if not file_data or not media_type:
+            return jsonify({"success": False, "error": "No file data received"}), 400
+
+        supported_media_types = {
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+        }
+        if media_type not in supported_media_types:
+            return jsonify({"success": False, "error": "Only PDF, JPG, PNG and WEBP files are supported"}), 400
+
+        model = genai.GenerativeModel("gemini-1.5-flash")
+
+        prompt = """You are a resume parser. Extract ALL information from this resume document/image and return ONLY a valid JSON object with exactly this structure. Do not include any explanation, markdown, or extra text - ONLY the raw JSON:
+        {
+          "personalInfo": {
+            "fullName": "",
+            "email": "",
+            "phone": "",
+            "location": "",
+            "linkedin": "",
+            "github": "",
+            "website": "",
+            "professionalTitle": ""
+          },
+          "summary": "",
+          "experience": [
+            {
+              "jobTitle": "",
+              "company": "",
+              "location": "",
+              "startDate": "",
+              "endDate": "",
+              "bullets": ["", ""]
+            }
+          ],
+          "education": [
+            {
+              "degree": "",
+              "institution": "",
+              "location": "",
+              "year": "",
+              "gradeType": "CGPA",
+              "gradeValue": ""
+            }
+          ],
+          "skills": ["", ""],
+          "projects": [
+            {
+              "name": "",
+              "description": "",
+              "techStack": ["", ""]
+            }
+          ],
+          "certifications": [""],
+          "languages": [""]
+        }
+        Rules:
+        - Extract every piece of information visible in the resume
+        - If a field is not found, leave it as empty string or empty array
+        - For experience bullets, split each bullet point as a separate array item
+        - For skills, each skill is a separate array item
+        - For gradeType, detect whether it is CGPA, GPA, Percentage or Marks and set accordingly
+        - Return ONLY raw JSON, absolutely no markdown backticks, no explanations"""
+
+        response = model.generate_content([
+            {
+                "mime_type": media_type,
+                "data": file_data,
+            },
+            prompt,
+        ])
+
+        text = (response.text or "").strip()
+        if not text:
+            return jsonify({"success": False, "error": "Could not read resume. Please try a higher quality image"}), 422
+
+        # Remove markdown code blocks if present
+        text = re.sub(r"```json\s*|\s*```", "", text).strip()
+        text = re.sub(r"^```|```$", "", text, flags=re.MULTILINE).strip()
+
+        extracted = json.loads(text)
+        return jsonify({"success": True, "data": extracted})
+
+    except json.JSONDecodeError:
+        return jsonify({"success": False, "error": "AI could not extract data. Try a clearer scan or PDF"}), 422
+    except Exception as e:
+        err = str(e)
+        if "429" in err or "ResourceExhausted" in err or "InvalidArgument" in err:
+            return jsonify({"success": False, "error": "Could not read resume. Please try a higher quality image"}), 422
+        return jsonify({"success": False, "error": err}), 500
 
 
 # -------------------------------------------------------------------- main

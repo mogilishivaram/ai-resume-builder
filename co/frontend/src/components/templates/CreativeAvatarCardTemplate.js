@@ -10,13 +10,22 @@ import {
 export default function CreativeAvatarCardTemplate({ resume, accentColor, previewId = "resume-preview" }) {
   const { personalInfo, summary, experience, education, skills, certifications } = normalizeResumeData(resume);
   const initials = getInitials(personalInfo.name);
+  const profilePhoto = personalInfo.profilePhoto;
 
   return (
     <div id={previewId} className="bg-white rounded-lg shadow-lg p-7 text-slate-800" style={{ fontFamily: "'Inter', sans-serif" }}>
       <header className="grid grid-cols-[92px_1fr] gap-4 items-center border-b border-slate-200 pb-5 mb-5">
-        <div className="w-[92px] h-[92px] rounded-2xl flex items-center justify-center text-2xl font-bold text-white" style={{ backgroundColor: accentColor }}>
-          {initials}
-        </div>
+        {profilePhoto ? (
+          <img
+            src={profilePhoto}
+            alt={personalInfo.name || "Profile photo"}
+            className="w-[92px] h-[92px] rounded-2xl object-cover border border-slate-200"
+          />
+        ) : (
+          <div className="w-[92px] h-[92px] rounded-2xl flex items-center justify-center text-2xl font-bold text-white" style={{ backgroundColor: accentColor }}>
+            {initials}
+          </div>
+        )}
         <div>
           <h1 className="text-2xl font-bold">{personalInfo.name || "Your Name"}</h1>
           <p className="text-sm mt-1" style={{ color: accentColor }}>{personalInfo.title || "Professional Title"}</p>

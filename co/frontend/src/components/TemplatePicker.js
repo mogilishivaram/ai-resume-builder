@@ -18,6 +18,8 @@ function isLightColor(hex) {
 }
 
 export default function TemplatePicker({ selectedTemplate, selectedAccent, onChooseTemplate }) {
+  const [isDesktop, setIsDesktop] = useState(() => (typeof window !== "undefined" ? window.innerWidth > 768 : false));
+
   const thumbnailResume = useMemo(
     () => ({
       personal_info: {
@@ -95,6 +97,18 @@ export default function TemplatePicker({ selectedTemplate, selectedAccent, onCho
     setActiveCategory(getTemplateById(syncedTemplate).category);
   }, [selectedTemplate, selectedAccent]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth > 768);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const filteredTemplates = useMemo(
     () => TEMPLATE_REGISTRY.filter((template) => template.category === activeCategory),
     [activeCategory]
@@ -144,6 +158,26 @@ export default function TemplatePicker({ selectedTemplate, selectedAccent, onCho
         {filteredTemplates.map((template) => {
           const isActive = draftTemplate === template.id;
           const CardTemplate = template.Component;
+          const cardStyle = isDesktop
+            ? {
+                height: "320px",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+              }
+            : undefined;
+          const thumbnailWrapperStyle = isDesktop
+            ? {
+                height: "260px",
+                overflow: "hidden",
+                position: "relative",
+              }
+            : undefined;
+          const previewWidth = isDesktop ? "794px" : "820px";
+          const resolvedPreviewWidth = template.id === "creative-dark-sidebar-initials" && isDesktop ? "794px" : previewWidth;
+          const previewScale = isDesktop ? "scale(0.28)" : "scale(0.18)";
+          // Ensure Shapes Creative also always uses the hardcoded gallery sample data.
+          const previewResume = thumbnailResume;
 
           return (
             <button
@@ -153,25 +187,41 @@ export default function TemplatePicker({ selectedTemplate, selectedAccent, onCho
               className={`text-left rounded-xl border transition overflow-hidden bg-slate-50 ${
                 isActive ? "ring-2 ring-offset-1" : "hover:border-slate-300"
               }`}
-              style={isActive ? { borderColor: draftAccent, boxShadow: `0 0 0 2px ${draftAccent}33` } : undefined}
+              style={{
+                ...(isActive ? { borderColor: draftAccent, boxShadow: `0 0 0 2px ${draftAccent}33` } : undefined),
+                ...(cardStyle || {}),
+              }}
             >
-              <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-white">
-                <p className="text-xs sm:text-sm font-semibold text-slate-700">{template.name}</p>
-                {isActive && <span className="text-[11px] font-medium" style={{ color: draftAccent }}>Selected</span>}
-              </div>
+              {!isDesktop && (
+                <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-white">
+                  <p className="text-xs sm:text-sm font-semibold text-slate-700">{template.name}</p>
+                  {isActive && <span className="text-[11px] font-medium" style={{ color: draftAccent }}>Selected</span>}
+                </div>
+              )}
 
-              <div className="h-[190px] md:h-[250px] overflow-hidden p-2 bg-white">
+              <div className="h-[190px] md:h-[250px] overflow-hidden p-2 bg-white" style={thumbnailWrapperStyle}>
                 <div
                   className="origin-top-left pointer-events-none"
                   style={{
-                    width: "820px",
-                    transform: "scale(0.18)",
+                    width: resolvedPreviewWidth,
+                    transform: previewScale,
                     transformOrigin: "top left",
                   }}
                 >
-                  <CardTemplate resume={thumbnailResume} accentColor={draftAccent} previewId={`preview-${template.id}`} />
+                  <CardTemplate
+                    resume={template.id === "creative-shapes" ? thumbnailResume : previewResume}
+                    accentColor={draftAccent}
+                    previewId={`preview-${template.id}`}
+                  />
                 </div>
               </div>
+
+              {isDesktop && (
+                <div className="flex items-center justify-between px-3 border-t border-slate-200 bg-white" style={{ height: "60px", minHeight: "60px" }}>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-700">{template.name}</p>
+                  {isActive && <span className="text-[11px] font-medium" style={{ color: draftAccent }}>Selected</span>}
+                </div>
+              )}
             </button>
           );
         })}

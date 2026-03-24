@@ -5,14 +5,23 @@ export default function PhotoTealTemplate({ resume, accentColor, previewId = "re
   const { personalInfo, summary, experience, education, skills, projects } = normalizeResumeData(resume);
   const teal = "#0d9488";
   const sectionColor = accentColor || teal;
+  const profilePhoto = personalInfo.profilePhoto;
 
   return (
     <div id={previewId} className="bg-white rounded-lg shadow-lg overflow-hidden text-slate-800" style={{ fontFamily: "'Inter', sans-serif" }}>
       <div className="grid grid-cols-[32%_68%] min-h-[900px]">
         <aside className="p-6 text-white" style={{ backgroundColor: teal }}>
-          <div className="w-24 h-24 rounded-xl bg-white/30 border border-white/60 flex items-center justify-center text-xs text-white/90">
-            Photo
-          </div>
+          {profilePhoto ? (
+            <img
+              src={profilePhoto}
+              alt={personalInfo.name || "Profile photo"}
+              className="w-24 h-24 rounded-xl object-cover border border-white/60"
+            />
+          ) : (
+            <div className="w-24 h-24 rounded-xl bg-white/30 border border-white/60 flex items-center justify-center text-xs text-white/90">
+              Photo
+            </div>
+          )}
           <h1 className="text-xl font-semibold mt-3">{personalInfo.name || "Your Name"}</h1>
           <p className="text-xs text-white/90">{personalInfo.title || "Professional Title"}</p>
 

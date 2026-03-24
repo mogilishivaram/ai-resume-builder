@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getResumes, createResume, deleteResume } from "../services/resumeService";
-import { FiPlus, FiTrash2, FiEdit, FiFileText, FiClock } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiEdit, FiFileText, FiClock, FiUpload } from "react-icons/fi";
 import { TEMPLATE_REGISTRY } from "../components/templates/templateRegistry";
+import ImportResumeModal from "../components/ImportResumeModal";
 
 const LEGACY_TEMPLATE_LABELS = {
   professional: "Professional",
@@ -30,6 +31,8 @@ export default function Dashboard() {
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     loadResumes();
@@ -61,6 +64,74 @@ export default function Dashboard() {
     }
   };
 
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    window.setTimeout(() => setToast(null), 3000);
+  };
+
+  const mapExtractedToResumePayload = (data) => {
+    const personalInfo = data?.personalInfo || {};
+    const experience = Array.isArray(data?.experience)
+      ? data.experience.map((item) => ({
+          title: item?.jobTitle || "",
+          company: item?.company || "",
+          location: item?.location || "",
+          start_date: item?.startDate || "",
+          end_date: item?.endDate || "",
+          bullets: Array.isArray(item?.bullets) ? item.bullets.filter(Boolean) : [],
+        }))
+      : [];
+
+    const education = Array.isArray(data?.education)
+      ? data.education.map((item) => ({
+          degree: item?.degree || "",
+          school: item?.institution || "",
+          location: item?.location || "",
+          year: item?.year || "",
+          grade_type: item?.gradeType || "CGPA",
+          gpa: item?.gradeValue || "",
+        }))
+      : [];
+
+    const projects = Array.isArray(data?.projects)
+      ? data.projects.map((item) => ({
+          name: item?.name || "",
+          description: item?.description || "",
+          technologies: Array.isArray(item?.techStack) ? item.techStack.filter(Boolean) : [],
+        }))
+      : [];
+
+    return {
+      title: personalInfo?.fullName ? `${personalInfo.fullName} Resume` : `Imported Resume ${resumes.length + 1}`,
+      template: "professional",
+      personal_info: {
+        name: personalInfo?.fullName || user?.name || "",
+        email: personalInfo?.email || user?.email || "",
+        phone: personalInfo?.phone || "",
+        location: personalInfo?.location || "",
+        linkedin: personalInfo?.linkedin || "",
+        github: personalInfo?.github || "",
+        website: personalInfo?.website || "",
+        title: personalInfo?.professionalTitle || "",
+      },
+      summary: data?.summary || "",
+      experience,
+      education,
+      skills: Array.isArray(data?.skills) ? data.skills.filter(Boolean) : [],
+      projects,
+      certifications: Array.isArray(data?.certifications) ? data.certifications.filter(Boolean) : [],
+      languages: Array.isArray(data?.languages) ? data.languages.filter(Boolean) : [],
+    };
+  };
+
+  const handleImport = async (extractedData) => {
+    const payload = mapExtractedToResumePayload(extractedData);
+    const resume = await createResume(payload);
+    navigate(`/resume/${resume.id}`, {
+      state: { importedToast: "Resume imported! Review and edit your details." },
+    });
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this resume?")) return;
     try {
@@ -72,7 +143,8 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in">
+    <>
+      <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
@@ -81,13 +153,22 @@ export default function Dashboard() {
           </h1>
           <p className="text-slate-500 mt-1">Manage your resumes and create new ones.</p>
         </div>
-        <button
-          onClick={handleCreate}
-          disabled={creating}
-          className="mt-4 sm:mt-0 flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-primary-700 transition disabled:opacity-50"
-        >
-          <FiPlus /> {creating ? "Creating…" : "New Resume"}
-        </button>
+        <div className="mt-4 sm:mt-0 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-2 border border-slate-300 text-slate-700 bg-white px-4 py-2.5 rounded-xl font-medium hover:border-slate-400 hover:bg-slate-50 transition"
+          >
+            <FiUpload /> Import Resume
+          </button>
+          <button
+            onClick={handleCreate}
+            disabled={creating}
+            className="flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-primary-700 transition disabled:opacity-50"
+          >
+            <FiPlus /> {creating ? "Creating…" : "Create New Resume"}
+          </button>
+        </div>
       </div>
 
       {/* Resumes grid */}
@@ -106,6 +187,13 @@ export default function Dashboard() {
             className="bg-primary-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-primary-700 transition"
           >
             <FiPlus className="inline mr-1" /> Create First Resume
+          </button>
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="ml-3 border border-slate-300 text-slate-700 bg-white px-6 py-2.5 rounded-xl font-medium hover:border-slate-400 hover:bg-slate-50 transition"
+          >
+            <FiUpload className="inline mr-1" /> Import Resume
           </button>
         </div>
       ) : (
@@ -159,6 +247,25 @@ export default function Dashboard() {
           </button>
         </div>
       )}
-    </div>
+      </div>
+
+      {importOpen && (
+        <ImportResumeModal
+          isOpen={importOpen}
+          onClose={() => setImportOpen(false)}
+          onImport={handleImport}
+          token={localStorage.getItem("token")}
+          showToast={showToast}
+        />
+      )}
+
+      {toast && (
+        <div className="fixed right-4 top-20 z-[60]">
+          <div className={`rounded-lg px-4 py-3 shadow-lg border ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"}`}>
+            <p className="text-sm font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

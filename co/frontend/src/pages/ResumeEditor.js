@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getResume, updateResume } from "../services/resumeService";
 import ResumeForm from "../components/ResumeForm";
 import ResumePreview from "../components/ResumePreview";
@@ -17,6 +17,7 @@ const LEGACY_TEMPLATE_MAP = {
 export default function ResumeEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,6 +26,16 @@ export default function ResumeEditor() {
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE_ID);
   const [accentColor, setAccentColor] = useState(getDefaultAccentForTemplate(DEFAULT_TEMPLATE_ID));
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
+  const [importToast, setImportToast] = useState("");
+
+  useEffect(() => {
+    if (location.state?.importedToast) {
+      setImportToast(location.state.importedToast);
+      const timer = window.setTimeout(() => setImportToast(""), 3000);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, [location.state]);
 
   useEffect(() => {
     getResume(id)
@@ -86,6 +97,14 @@ export default function ResumeEditor() {
 
   return (
     <div className="min-h-screen bg-slate-50 animate-fade-in">
+      {importToast && (
+        <div className="fixed right-4 top-20 z-[60] no-print">
+          <div className="rounded-lg px-4 py-3 shadow-lg border bg-emerald-50 border-emerald-200 text-emerald-700">
+            <p className="text-sm font-medium">{importToast}</p>
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="bg-white border-b border-slate-200 sticky top-16 z-40 no-print">
         <div className="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
